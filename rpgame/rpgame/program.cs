@@ -40,14 +40,13 @@ namespace rpgame
             switch(TileType)
             {
                 case TileType.Corridor:
-                    return ".";
+                    return "_";
                 case TileType.Room:
                     return ".";
                 case TileType.Wall:
                     return "#";
                 default:
                     throw new Exception("Unknown tile type!");
-                    break;
             }
         }
 
