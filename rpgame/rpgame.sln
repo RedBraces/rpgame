@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2015
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rpgame", "rpgame\rpgame.csproj", "{2D40913E-78C6-4580-8ADD-0F883B5749A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapGenerator", "MapGenerator\MapGenerator.csproj", "{C4346017-0DA3-4CA3-9827-5C9296AB1D15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{CC55289A-E83A-443C-9D70-9A74D51F0F7A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2D40913E-78C6-4580-8ADD-0F883B5749A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D40913E-78C6-4580-8ADD-0F883B5749A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D40913E-78C6-4580-8ADD-0F883B5749A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D40913E-78C6-4580-8ADD-0F883B5749A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4346017-0DA3-4CA3-9827-5C9296AB1D15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4346017-0DA3-4CA3-9827-5C9296AB1D15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4346017-0DA3-4CA3-9827-5C9296AB1D15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4346017-0DA3-4CA3-9827-5C9296AB1D15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC55289A-E83A-443C-9D70-9A74D51F0F7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC55289A-E83A-443C-9D70-9A74D51F0F7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC55289A-E83A-443C-9D70-9A74D51F0F7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC55289A-E83A-443C-9D70-9A74D51F0F7A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F4BE2FEC-2044-4590-B375-5BE1F5A42F2C}
+	EndGlobalSection
+EndGlobal
