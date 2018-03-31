@@ -115,12 +115,12 @@ namespace MapGenerator
             while (GetMapFillRate() < RoomPercentage)
             {
                 bool success = GenerateRoom();
-                continue; 
+                // continue; 
                 // Should rooms be linked together with a corridor?
                 if(success & this.CountMapSpaceElement(MapSpaceElementType.Room) > 1)
                 {
                     GenerateCorridorFromRoom(this.mapSpaceElements[this.mapSpaceElements.Count - 1]);
-                    return;
+                    //return;
                 }
             }
         }
@@ -168,13 +168,187 @@ namespace MapGenerator
             Random r = new Random();
             Direction d = (Direction)r.Next(0, 3);
 
+            MapSpaceElement linkTo = null;
+
+            int triedDirectionsCount = 0;
             bool elementFound = false;
             while(!elementFound)
             {
-                // No element found. Next direction!
-                if ((int)d < 3) d++;
-                else d = 0;
+                triedDirectionsCount++;
+                if (triedDirectionsCount >= 4) throw new Exception("All directions tried, no objects to link to found!");
+
+                linkTo = this.FindMapSpaceElement(room, d);
+
+                if (linkTo != null)
+                {
+                    elementFound = true;
+                }
+                else
+                {
+                    // No element found. Next direction!
+                    if ((int)d < 3) d++;
+                    else d = 0;
+                }
             }
+
+            if (linkTo == null) throw new Exception("No map space element to link to found!");
+
+            // Element to link to found. Determine where to start corridor
+            Coordinate startingPoint = room.FindEndPointBasedOnDirection(d);
+            int x, y, offset; // use these to generate the corridor
+
+            // Randomize the offset alongside the wall in which direction to move:
+            switch(d)
+            {
+                case Direction.Down:
+                    offset = r.Next(0, room.Width - 1);
+                    x = startingPoint.x + offset;
+                    y = startingPoint.y + 1;
+                    break;
+                case Direction.Up:
+                    offset = r.Next(0, room.Width - 1);
+                    x = startingPoint.x + offset;
+                    y = startingPoint.y - 1;
+                    break;
+                case Direction.Left:
+                    offset = r.Next(0, room.Height - 1);
+                    y = startingPoint.y + offset;
+                    x = startingPoint.x - 1;
+                    break;
+                case Direction.Right:
+                    offset = r.Next(0, room.Height - 1);
+                    y = startingPoint.y + offset;
+                    x = startingPoint.x + 1;
+                    break;
+                default:
+                    throw new Exception("Unknown direction " + d.ToString());
+            }
+
+            // Now the starting point is known, as well as the primary direction. Find out the secondary direction, if any
+            Direction secondary = new Direction();
+            bool secondaryDirectionExists = false;
+            Coordinate turnAt = null;
+
+            // Sometimes there primary direction is not included in the directions... which means the object is on the
+            // same level. Not to worry though, this should be handled a bit further on, when checking for where to turn.
+
+            List<Direction> dirs = linkTo.WhereAmIComparedToCoordinate(x, y);
+            foreach (Direction di in dirs)
+            {
+                if (di != d)
+                {
+                    secondary = di;
+                    secondaryDirectionExists = true;
+                    break;
+                }
+            }
+
+            if(secondaryDirectionExists)
+            {
+                Coordinate targetEndpoint;
+                int turnAtX = 0, turnAtY = 0, maxVal = 0;
+                // This means there is a turn in the corridor. Find out where the to place the turn
+                switch(d)
+                {
+                    case Direction.Down:
+                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Up);
+                        maxVal = linkTo.Width - 1;
+                        if (maxVal < 0) maxVal = 0;
+                        offset = r.Next(0, maxVal);
+                        turnAtY = targetEndpoint.y + offset;
+                        turnAtX = x;
+
+                        if (turnAtY < y) turnAtY = y;
+                        break;
+                    case Direction.Up:
+                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Down);
+                        maxVal = linkTo.Width - 1;
+                        if (maxVal < 0) maxVal = 0;
+                        offset = r.Next(0, maxVal);
+                        turnAtY = targetEndpoint.y - offset;
+                        turnAtX = x;
+
+                        if (turnAtY > y) turnAtY = y;
+                        break;
+                    case Direction.Left:
+                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Right);
+                        maxVal = linkTo.Height - 1;
+                        if (maxVal < 0) maxVal = 0;
+                        offset = r.Next(0, maxVal);
+                        turnAtX = targetEndpoint.x - offset;
+                        turnAtY = y;
+
+                        if (turnAtX > x) turnAtX = x;
+                        break;
+                    case Direction.Right:
+                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Left);
+                        maxVal = linkTo.Height - 1;
+                        if (maxVal < 0) maxVal = 0;
+                        offset = r.Next(0, maxVal);
+                        turnAtX = targetEndpoint.x + offset;
+                        turnAtY = y;
+
+                        if (turnAtX < x) turnAtX = x;
+                        break;
+                }
+
+                turnAt = new Coordinate(turnAtX, turnAtY, TileType.Wall); // Turn here.
+            }
+
+            // Now we know pretty much everything we need to know: where to start, which direction(s) to move in,
+            // where to turn, and where the target is located. Start building corridor.
+            bool corridorReady = false, inValidateCorridor = false;
+            MapSpaceElement corridor = new MapSpaceElement();
+            corridor.ElementType = MapSpaceElementType.Corridor;
+
+            while (!corridorReady)
+            {
+                Coordinate c = new Coordinate(x, y, TileType.Corridor);
+                corridor.AddCoordinate(c);
+
+                // Should we turn here?
+                if (secondaryDirectionExists)
+                {
+                    if (turnAt.x == x && turnAt.y == y) d = secondary;
+                }
+
+                switch (d)
+                {
+                    case Direction.Down:
+                        y++;
+                        break;
+                    case Direction.Up:
+                        y--;
+                        break;
+                    case Direction.Left:
+                        x--;
+                        break;
+                    case Direction.Right:
+                        x++;
+                        break;
+                }
+
+                // Is the corridor finished?
+                if (linkTo.CoordinateIsInElement(x, y))
+                {
+                    corridorReady = true;
+                }
+
+                //...or is it out of bounds?
+                if(x <= 0 || y <= 0 || x >= (this.MapWidth - 1) || y >= (this.MapHeight - 1))
+                {
+                    inValidateCorridor = true;
+                    break;
+                }
+            }
+
+            // Whew! Finally, we are done!
+            if (inValidateCorridor == true || !ValidateMapSpaceElement(corridor))
+            {
+                return; // All this work for nothing...
+            }
+
+            PlaceMapElementOnMap(corridor);
         }
 
         internal MapSpaceElement FindMapSpaceElement(MapSpaceElement element, Direction dir)
@@ -335,6 +509,13 @@ namespace MapGenerator
                     if (this.GetMapTile(c.y + 1, c.x) == TileType.Room) return false;
                     if (this.GetMapTile(c.y + 1, c.x + 1) == TileType.Room) return false;
                 }
+
+                // Validation 4: a corridor cannot run adjacent to another corridor or room for more than one square
+                // If that happens, remove extra squares that run adjacent.
+                if(m.ElementType == MapSpaceElementType.Corridor)
+                {
+
+                }
             }
 
             return true;
@@ -407,6 +588,39 @@ namespace MapGenerator
                 get { return _guid; }
             }
 
+            public int Width
+            {
+                get
+                {
+                    int smallest = 0;
+                    int largest = 0;
+                    foreach (Coordinate c in this.Coordinates)
+                    {
+                        if (smallest == 0 || c.x < smallest) smallest = c.x;
+                        if (largest == 0 || c.x > largest) largest = c.x;
+                    }
+
+                    return largest - smallest;
+                }
+            }
+
+            public int Height
+            {
+                get
+                {
+                    int smallest = 0;
+                    int largest = 0;
+
+                    foreach (Coordinate c in this.Coordinates)
+                    {
+                        if (smallest == 0 || c.y < smallest) smallest = c.y;
+                        if (largest == 0 || c.y > largest) largest = c.y;
+                    }
+
+                    return largest - smallest;
+                }
+            }
+
             public MapSpaceElement()
             {
                 _coordinates = new List<Coordinate>();
@@ -471,6 +685,31 @@ namespace MapGenerator
                     if (c.x == x && c.y == y) return true;
                 }
                 return false;
+            }
+
+            public List<Direction> WhereAmIComparedToCoordinate(int x, int y)
+            {
+                List<Direction> directions = new List<Direction>();
+
+                bool isAbove = false;
+                bool isBelow = false;
+                bool isLeft = false;
+                bool isRight = false;
+
+                foreach(Coordinate c in this.Coordinates)
+                {
+                    if (c.x < x) isLeft = true;
+                    if (c.x > x) isRight = true;
+                    if (c.y < y) isAbove = true;
+                    if (c.y > y) isBelow = true;
+                }
+
+                if (isLeft && !isRight) directions.Add(Direction.Left);
+                if (isRight && !isLeft) directions.Add(Direction.Right);
+                if (isAbove && !isBelow) directions.Add(Direction.Up);
+                if (isBelow && !isAbove) directions.Add(Direction.Down);
+
+                return directions;
             }
 
             #region StaticMethods

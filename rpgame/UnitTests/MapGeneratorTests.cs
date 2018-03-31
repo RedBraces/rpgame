@@ -177,7 +177,6 @@ namespace UnitTests
 
             m.PlaceMapElementOnMap(m1);
 
-
             // Second room:
             m2.AddCoordinate(new Map.Coordinate(4, 1, TileType.Room));
             m2.AddCoordinate(new Map.Coordinate(4, 2, TileType.Room));
@@ -191,6 +190,25 @@ namespace UnitTests
 
             Assert.AreEqual(m1.Guid, fe1.Guid);
             Assert.AreEqual(m2.Guid, fe2.Guid);
+        }
+
+        [Test]
+        public void TestFindingDirectionFromCoordinate()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+
+            m1.ElementType = Map.MapSpaceElementType.Room;
+
+            // First room:
+            m1.AddCoordinate(new Map.Coordinate(1, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 2, TileType.Room));
+
+            var dirs = m1.WhereAmIComparedToCoordinate(3, 3);
+
+            Assert.IsTrue(dirs.Contains(Map.Direction.Up));
+            Assert.IsTrue(dirs.Contains(Map.Direction.Left));
         }
     }
 }
