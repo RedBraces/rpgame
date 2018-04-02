@@ -36,7 +36,7 @@ namespace rpgame
             switch(TileType)
             {
                 case TileType.Corridor:
-                    return "_";
+                    return ".";
                 case TileType.Room:
                     return ".";
                 case TileType.Wall:

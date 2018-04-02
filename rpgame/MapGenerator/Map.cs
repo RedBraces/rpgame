@@ -489,6 +489,7 @@ namespace MapGenerator
             // Corridor starting point: validate the starting location is valid
             if (m.ElementType == MapSpaceElementType.Corridor)
             {
+                // Verify there's not another corridor located diagonally from the starting point.
                 Coordinate sC = m.Coordinates[0];
                 if (GetMapTile(sC.y - 1, sC.x - 1) == TileType.Corridor || GetMapTile(sC.y - 1, sC.x + 1) == TileType.Corridor
                     || GetMapTile(sC.y + 1, sC.x - 1) == TileType.Corridor || GetMapTile(sC.y + 1, sC.x + 1) == TileType.Corridor)
