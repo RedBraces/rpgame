@@ -193,6 +193,41 @@ namespace UnitTests
         }
 
         [Test]
+        public void TestIfElementIsInMyLongitudeOrLatitude()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m2 = new Map.MapSpaceElement();
+
+            m1.ElementType = Map.MapSpaceElementType.Room;
+            m2.ElementType = Map.MapSpaceElementType.Room;
+
+            // First room:
+            m1.AddCoordinate(new Map.Coordinate(1, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 2, TileType.Room));
+
+            m.PlaceMapElementOnMap(m1);
+
+            // Second room:
+            m2.AddCoordinate(new Map.Coordinate(10, 10, TileType.Room));
+            m2.AddCoordinate(new Map.Coordinate(10, 11, TileType.Room));
+            m2.AddCoordinate(new Map.Coordinate(11, 10, TileType.Room));
+            m2.AddCoordinate(new Map.Coordinate(11, 11, TileType.Room));
+
+            m.PlaceMapElementOnMap(m2);
+
+            Map.Coordinate c = new Map.Coordinate(50, 1, TileType.Wall);
+            Map.Coordinate c2 = new Map.Coordinate(10, 50, TileType.Wall);
+
+            var d1 = m.FindElementOnThisLongitudeOrLatitude(c, true);
+            var d2 = m.FindElementOnThisLongitudeOrLatitude(c2, false);
+
+            Assert.IsTrue(d1.Contains(Map.Direction.Left));
+            Assert.IsTrue(d2.Contains(Map.Direction.Up));
+        }
+
+        [Test]
         public void TestFindingDirectionFromCoordinate()
         {
             Map.MapSpaceElement m1 = new Map.MapSpaceElement();
@@ -209,6 +244,43 @@ namespace UnitTests
 
             Assert.IsTrue(dirs.Contains(Map.Direction.Up));
             Assert.IsTrue(dirs.Contains(Map.Direction.Left));
+        }
+
+        [Test]
+        public void TestCorridorValidation()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m2 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m3 = new Map.MapSpaceElement();
+
+            m1.ElementType = Map.MapSpaceElementType.Room;
+            m2.ElementType = Map.MapSpaceElementType.Corridor;
+            m3.ElementType = Map.MapSpaceElementType.Corridor;
+
+            // First room:
+            m1.AddCoordinate(new Map.Coordinate(1, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 2, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(3, 1, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(3, 2, TileType.Room));
+
+            m.PlaceMapElementOnMap(m1);
+
+            m2.AddCoordinate(new Map.Coordinate(2, 3, TileType.Corridor));
+            m2.AddCoordinate(new Map.Coordinate(2, 4, TileType.Corridor));
+
+            bool firstCorridorIsValid = m.ValidateMapSpaceElement(m2);
+
+            m3.AddCoordinate(new Map.Coordinate(1, 3, TileType.Corridor));
+            m3.AddCoordinate(new Map.Coordinate(2, 3, TileType.Corridor));
+            m3.AddCoordinate(new Map.Coordinate(3, 3, TileType.Corridor));
+
+            bool secondCorridotIsValid = m.ValidateMapSpaceElement(m3);
+
+            Assert.IsTrue(firstCorridorIsValid);
+            Assert.IsTrue(secondCorridotIsValid);
+            Assert.AreEqual(2, m3.Coordinates.Count);
         }
     }
 }

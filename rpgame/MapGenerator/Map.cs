@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MapGenerator
 {
@@ -50,7 +47,7 @@ namespace MapGenerator
             _map = new TileType[height, width];
             GenerateEmptyMap();
 
-            RoomPercentage = 30;
+            RoomPercentage = 35;
             mapSpaceElements = new List<MapSpaceElement>();
 
             if(generateMap) PopulateMap();
@@ -160,197 +157,135 @@ namespace MapGenerator
             return true;
         }
 
-        internal void GenerateCorridorFromRoom(MapSpaceElement room)
+        internal bool GenerateCorridorFromRoom(MapSpaceElement room)
+        {
+            
+            bool success = false;
+            int counter = 0;
+            Random r = new Random();
+            Direction d = (Direction)r.Next(0, 3); // randomize starting direction
+
+            while (!success && counter <= 3)
+            {
+                success = GenerateCorridorFromRoom(room, d);
+
+                // Next direction
+                if ((int)d == 3) d = 0;
+                else d++;
+
+                counter++;
+            }
+
+            return success;
+        }
+
+        internal bool GenerateCorridorFromRoom(MapSpaceElement room, Direction direction)
         {
             if (room.ElementType != MapSpaceElementType.Room) throw new Exception("Map space element is not a room!");
 
             // Randomize in what direction an existing map space element should be looked for first
             Random r = new Random();
-            Direction d = (Direction)r.Next(0, 3);
+            //Direction direction = (Direction)r.Next(0, 3);
 
-            MapSpaceElement linkTo = null;
+            Coordinate currentPosition = null;
+            int offset = 0;
 
-            int triedDirectionsCount = 0;
-            bool elementFound = false;
-            while(!elementFound)
-            {
-                triedDirectionsCount++;
-                if (triedDirectionsCount >= 4) throw new Exception("All directions tried, no objects to link to found!");
-
-                linkTo = this.FindMapSpaceElement(room, d);
-
-                if (linkTo != null)
-                {
-                    elementFound = true;
-                }
-                else
-                {
-                    // No element found. Next direction!
-                    if ((int)d < 3) d++;
-                    else d = 0;
-                }
-            }
-
-            if (linkTo == null) throw new Exception("No map space element to link to found!");
-
-            // Element to link to found. Determine where to start corridor
-            Coordinate startingPoint = room.FindEndPointBasedOnDirection(d);
-            int x, y, offset; // use these to generate the corridor
-
-            // Randomize the offset alongside the wall in which direction to move:
-            switch(d)
+            // Determine the starting cell
+            switch(direction)
             {
                 case Direction.Down:
                     offset = r.Next(0, room.Width - 1);
-                    x = startingPoint.x + offset;
-                    y = startingPoint.y + 1;
+                    currentPosition = room.FindEndPointBasedOnDirection(Direction.Down);
+                    currentPosition = new Coordinate(currentPosition.x + offset, currentPosition.y + 1, TileType.Corridor);
                     break;
                 case Direction.Up:
                     offset = r.Next(0, room.Width - 1);
-                    x = startingPoint.x + offset;
-                    y = startingPoint.y - 1;
+                    currentPosition = room.FindEndPointBasedOnDirection(Direction.Up);
+                    currentPosition = new Coordinate(currentPosition.x + offset, currentPosition.y - 1, TileType.Corridor);
                     break;
                 case Direction.Left:
                     offset = r.Next(0, room.Height - 1);
-                    y = startingPoint.y + offset;
-                    x = startingPoint.x - 1;
+                    currentPosition = room.FindEndPointBasedOnDirection(Direction.Left);
+                    currentPosition = new Coordinate(currentPosition.x - 1, currentPosition.y + offset, TileType.Corridor);
                     break;
                 case Direction.Right:
                     offset = r.Next(0, room.Height - 1);
-                    y = startingPoint.y + offset;
-                    x = startingPoint.x + 1;
+                    currentPosition = room.FindEndPointBasedOnDirection(Direction.Right);
+                    currentPosition = new Coordinate(currentPosition.x + 1, currentPosition.y + offset, TileType.Corridor);
                     break;
                 default:
-                    throw new Exception("Unknown direction " + d.ToString());
+                    throw new Exception("Unknown direction " + direction.ToString());
             }
-
-            // Now the starting point is known, as well as the primary direction. Find out the secondary direction, if any
-            Direction secondary = new Direction();
-            bool secondaryDirectionExists = false;
-            Coordinate turnAt = null;
-
-            // Sometimes there primary direction is not included in the directions... which means the object is on the
-            // same level. Not to worry though, this should be handled a bit further on, when checking for where to turn.
-
-            List<Direction> dirs = linkTo.WhereAmIComparedToCoordinate(x, y);
-            foreach (Direction di in dirs)
-            {
-                if (di != d)
-                {
-                    secondary = di;
-                    secondaryDirectionExists = true;
-                    break;
-                }
-            }
-
-            if(secondaryDirectionExists)
-            {
-                Coordinate targetEndpoint;
-                int turnAtX = 0, turnAtY = 0, maxVal = 0;
-                // This means there is a turn in the corridor. Find out where the to place the turn
-                switch(d)
-                {
-                    case Direction.Down:
-                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Up);
-                        maxVal = linkTo.Width - 1;
-                        if (maxVal < 0) maxVal = 0;
-                        offset = r.Next(0, maxVal);
-                        turnAtY = targetEndpoint.y + offset;
-                        turnAtX = x;
-
-                        if (turnAtY < y) turnAtY = y;
-                        break;
-                    case Direction.Up:
-                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Down);
-                        maxVal = linkTo.Width - 1;
-                        if (maxVal < 0) maxVal = 0;
-                        offset = r.Next(0, maxVal);
-                        turnAtY = targetEndpoint.y - offset;
-                        turnAtX = x;
-
-                        if (turnAtY > y) turnAtY = y;
-                        break;
-                    case Direction.Left:
-                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Right);
-                        maxVal = linkTo.Height - 1;
-                        if (maxVal < 0) maxVal = 0;
-                        offset = r.Next(0, maxVal);
-                        turnAtX = targetEndpoint.x - offset;
-                        turnAtY = y;
-
-                        if (turnAtX > x) turnAtX = x;
-                        break;
-                    case Direction.Right:
-                        targetEndpoint = linkTo.FindEndPointBasedOnDirection(Direction.Left);
-                        maxVal = linkTo.Height - 1;
-                        if (maxVal < 0) maxVal = 0;
-                        offset = r.Next(0, maxVal);
-                        turnAtX = targetEndpoint.x + offset;
-                        turnAtY = y;
-
-                        if (turnAtX < x) turnAtX = x;
-                        break;
-                }
-
-                turnAt = new Coordinate(turnAtX, turnAtY, TileType.Wall); // Turn here.
-            }
-
-            // Now we know pretty much everything we need to know: where to start, which direction(s) to move in,
-            // where to turn, and where the target is located. Start building corridor.
-            bool corridorReady = false, inValidateCorridor = false;
+            // With the starting position known, start building the corridor:
+            bool corridorFinished = false;
             MapSpaceElement corridor = new MapSpaceElement();
             corridor.ElementType = MapSpaceElementType.Corridor;
 
-            while (!corridorReady)
+            while(!corridorFinished)
             {
-                Coordinate c = new Coordinate(x, y, TileType.Corridor);
-                corridor.AddCoordinate(c);
+                corridor.AddCoordinate(new Coordinate(currentPosition.x, currentPosition.y, TileType.Corridor));
 
-                // Should we turn here?
-                if (secondaryDirectionExists)
-                {
-                    if (turnAt.x == x && turnAt.y == y) d = secondary;
-                }
-
-                switch (d)
+                // Move one step further
+                switch(direction)
                 {
                     case Direction.Down:
-                        y++;
+                        currentPosition.y++;
                         break;
                     case Direction.Up:
-                        y--;
+                        currentPosition.y--;
                         break;
                     case Direction.Left:
-                        x--;
+                        currentPosition.x--;
                         break;
                     case Direction.Right:
-                        x++;
+                        currentPosition.x++;
                         break;
                 }
 
-                // Is the corridor finished?
-                if (linkTo.CoordinateIsInElement(x, y))
+                if (currentPosition.x <= 0 || currentPosition.y <= 0) break;
+                if (currentPosition.x >= this.MapWidth || currentPosition.y >= this.MapHeight) break;
+
+                // Is the corridor already finished?
+                if(this.IsThereAMapSpaceElementHere(currentPosition))
                 {
-                    corridorReady = true;
+                    corridorFinished = true;
+
+                    if (!this.ValidateMapSpaceElement(corridor)) return false;
+                    //bool s = this.ValidateMapSpaceElement(corridor);
+                    this.PlaceMapElementOnMap(corridor);
+                    return true;
                 }
 
-                //...or is it out of bounds?
-                if(x <= 0 || y <= 0 || x >= (this.MapWidth - 1) || y >= (this.MapHeight - 1))
+                // Determine in what direction to move after the next cell, eg. if there is a need for a turn
+                List<Direction> longitude = this.FindElementOnThisLongitude(currentPosition);
+                List<Direction> latitude = this.FindElementOnThisLatitude(currentPosition);
+
+                // Again, based on direction, determine what to do next:
+                switch(direction)
                 {
-                    inValidateCorridor = true;
-                    break;
+                    case Direction.Down:
+                    case Direction.Up:
+                        if (latitude.Contains(direction)) continue; // No need to turn, there is an element in the current direction
+                        if (longitude.Count <= 0) continue; // Nothing here, continue...
+                        // Otherwise, randomize where to go:
+                        direction = longitude[r.Next(0, longitude.Count - 1)];
+                        break;
+                    case Direction.Left:
+                    case Direction.Right:
+                        if (longitude.Contains(direction)) continue; // Again, no need to turn
+                        if (latitude.Count <= 0) continue; // Nothing here. Contunue...
+
+                        // Where to turn?
+                        direction = latitude[r.Next(0, latitude.Count - 1)];
+                        break;
                 }
             }
-
-            // Whew! Finally, we are done!
-            if (inValidateCorridor == true || !ValidateMapSpaceElement(corridor))
-            {
-                return; // All this work for nothing...
-            }
-
-            PlaceMapElementOnMap(corridor);
+            
+            // This should never be reached...
+            return false;
         }
 
+        #region FindingElements
         internal MapSpaceElement FindMapSpaceElement(MapSpaceElement element, Direction dir)
         {
             // Find the correct place to start looking for based on the direction
@@ -476,13 +411,79 @@ namespace MapGenerator
             return null; // Nothing found!
         }
 
+        internal List<Direction> FindElementOnThisLongitude(Coordinate coordinate)
+        {
+            return FindElementOnThisLongitudeOrLatitude(coordinate, true);
+        }
+
+        internal List<Direction> FindElementOnThisLatitude(Coordinate coordinate)
+        {
+            return FindElementOnThisLongitudeOrLatitude(coordinate, false);
+        }
+
         /// <summary>
-        /// Checks if a map space element is valid eg. can be placed on the map without conflicts
+        /// Finds elements on the map that are on the same longitude or latitude as the provided coordinate
+        /// </summary>
+        /// <param name="coordinate">The coordinate to search based on</param>
+        /// <param name="isLongitude">Whether to look on the longitude or the latitude</param>
+        /// <returns>A list of directions in which there are elements</returns>
+        internal List<Direction> FindElementOnThisLongitudeOrLatitude(Coordinate coordinate, bool isLongitude)
+        {
+            List<Direction> d = new List<Direction>();
+
+            foreach(MapSpaceElement m in this.mapSpaceElements)
+            {
+                foreach(Coordinate c in m.Coordinates)
+                {
+                    bool isMatch = false;
+
+                    if (isLongitude && c.y == coordinate.y) isMatch = true;
+                    else if (!isLongitude && c.x == coordinate.x) isMatch = true;
+
+                    if(isMatch)
+                    {
+                        List<Direction> elementDirs = m.WhereAmIComparedToCoordinate(coordinate.x, coordinate.y);
+
+                        // Depending on whether we're looking for longitude or latitude, we only want to know if the
+                        // elements is up/down or left/right of the current position
+                        foreach(Direction dir in elementDirs)
+                        {
+                            if (isLongitude && (dir == Direction.Up || dir == Direction.Down)) continue;
+                            else if (!isLongitude && (dir == Direction.Left || dir == Direction.Right)) continue;
+
+                            if (!d.Contains(dir)) d.Add(dir);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            return d;
+        }
+
+        internal bool IsThereAMapSpaceElementHere(Coordinate coordinate)
+        {
+            foreach(MapSpaceElement m in this.mapSpaceElements)
+            {
+                if (m.CoordinateIsInElement(coordinate.x, coordinate.y)) return true;
+            }
+            return false;
+        }
+        #endregion
+
+        /// <summary>
+        /// Checks if a map space element is valid eg. can be placed on the map without conflicts, and in some cases
+        /// edits the (potentially) invalid element
         /// </summary>
         /// <param name="m"></param>
         /// <returns></returns>
         internal bool ValidateMapSpaceElement(MapSpaceElement m)
         {
+            bool previousCellWasAdjacent = false;
+            int removeFromIndex = 0;
+            int counter = 0;
+
             foreach(Coordinate c in m.Coordinates)
             {
                 // Validation 1: element fits into map
@@ -498,24 +499,38 @@ namespace MapGenerator
                 // There must be a space of at least one square of another type
                 if(m.ElementType == MapSpaceElementType.Room)
                 {
-                    if (this.GetMapTile(c.y - 1, c.x - 1) == TileType.Room) return false;
-                    if (this.GetMapTile(c.y - 1, c.x) == TileType.Room) return false;
-                    if (this.GetMapTile(c.y - 1, c.x + 1) == TileType.Room) return false;
+                    if (this.GetMapTile(c.y - 1, c.x - 1) != TileType.Wall) return false;
+                    if (this.GetMapTile(c.y - 1, c.x) != TileType.Wall) return false;
+                    if (this.GetMapTile(c.y - 1, c.x + 1) != TileType.Wall) return false;
 
-                    if (this.GetMapTile(c.y, c.x - 1) == TileType.Room) return false;
-                    if (this.GetMapTile(c.y, c.x + 1) == TileType.Room) return false;
+                    if (this.GetMapTile(c.y, c.x - 1) != TileType.Wall) return false;
+                    if (this.GetMapTile(c.y, c.x + 1) != TileType.Wall) return false;
 
-                    if (this.GetMapTile(c.y + 1, c.x - 1) == TileType.Room) return false;
-                    if (this.GetMapTile(c.y + 1, c.x) == TileType.Room) return false;
-                    if (this.GetMapTile(c.y + 1, c.x + 1) == TileType.Room) return false;
+                    if (this.GetMapTile(c.y + 1, c.x - 1) != TileType.Wall) return false;
+                    if (this.GetMapTile(c.y + 1, c.x) != TileType.Wall) return false;
+                    if (this.GetMapTile(c.y + 1, c.x + 1) != TileType.Wall) return false;
                 }
 
                 // Validation 4: a corridor cannot run adjacent to another corridor or room for more than one square
                 // If that happens, remove extra squares that run adjacent.
-                if(m.ElementType == MapSpaceElementType.Corridor)
+                if(m.ElementType == MapSpaceElementType.Corridor && counter > 0)
                 {
-
+                    if (this.GetMapTile(c.y - 1, c.x) != TileType.Wall || this.GetMapTile(c.y - 1, c.x) != TileType.Wall
+                        || this.GetMapTile(c.y, c.x + 1) != TileType.Wall || this.GetMapTile(c.y, c.x - 1) != TileType.Wall)
+                    {
+                        if (counter >= removeFromIndex && previousCellWasAdjacent) removeFromIndex = counter;
+                        previousCellWasAdjacent = true;
+                    }
+                    else previousCellWasAdjacent = false;
                 }
+
+                counter++;
+            }
+
+            // Modification: if the space element type is a corridor and there are adjacent squares, remove extra squares
+            if(m.ElementType == MapSpaceElementType.Corridor && removeFromIndex > 0)
+            {
+                m.RemoveCoordinatesStartingAt(removeFromIndex);
             }
 
             return true;
@@ -630,6 +645,12 @@ namespace MapGenerator
             public void AddCoordinate(Coordinate c)
             {
                 Coordinates.Add(c);
+            }
+
+            public void RemoveCoordinatesStartingAt(int position)
+            {
+                int remove = _coordinates.Count - position;
+                this._coordinates.RemoveRange(position, _coordinates.Count - position);
             }
 
             /// <summary>
