@@ -148,10 +148,9 @@ namespace MapGenerator
                 }
             }
 
-            if (!ValidateMapSpaceElement(r)) return false;
+            if (!ValidateMapSpaceElement(ref r)) return false;
 
             // Add generated room to the list of elements:
-            //mapSpaceElements.Add(r);
             PlaceMapElementOnMap(r);
 
             return true;
@@ -250,8 +249,11 @@ namespace MapGenerator
                 {
                     corridorFinished = true;
 
-                    if (!this.ValidateMapSpaceElement(corridor)) return false;
-                    //bool s = this.ValidateMapSpaceElement(corridor);
+                    if (!this.ValidateMapSpaceElement(ref corridor))
+                    {
+                        return false;
+                    }
+
                     this.PlaceMapElementOnMap(corridor);
                     return true;
                 }
@@ -478,24 +480,35 @@ namespace MapGenerator
         /// </summary>
         /// <param name="m"></param>
         /// <returns></returns>
-        internal bool ValidateMapSpaceElement(MapSpaceElement m)
+        internal bool ValidateMapSpaceElement(ref MapSpaceElement m)
         {
             bool previousCellWasAdjacent = false;
             int removeFromIndex = 0;
             int counter = 0;
 
-            foreach(Coordinate c in m.Coordinates)
+            // Corridor starting point: validate the starting location is valid
+            if (m.ElementType == MapSpaceElementType.Corridor)
             {
-                // Validation 1: element fits into map
-                //if (c.x == 0 || c.y == 0) return false; // cannot be adjacent to a wall!
+                Coordinate sC = m.Coordinates[0];
+                if (GetMapTile(sC.y - 1, sC.x - 1) == TileType.Corridor || GetMapTile(sC.y - 1, sC.x + 1) == TileType.Corridor
+                    || GetMapTile(sC.y + 1, sC.x - 1) == TileType.Corridor || GetMapTile(sC.y + 1, sC.x + 1) == TileType.Corridor)
+                {
+                    return false;
+                }
+            }
+
+            foreach (Coordinate c in m.Coordinates)
+            {
+                // Validation: element fits into map
+                if (c.x == 0 || c.y == 0) return false; // cannot be border piece!
                 if (c.x >= (_map.GetLength(1) - 1) || c.y >= (_map.GetLength(0)) - 1) return false; // element out of bounds
 
-                // Validation 2: elements do not overlap:
+                // Validation: elements do not overlap:
                 TileType curTile = this.GetMapTile(c.y, c.x);
 
                 if (curTile != TileType.Wall) return false;
 
-                // Validation 3: a room cannot be directly adjacent to another room
+                // Validation: a room cannot be directly adjacent to another room
                 // There must be a space of at least one square of another type
                 if(m.ElementType == MapSpaceElementType.Room)
                 {
@@ -506,19 +519,22 @@ namespace MapGenerator
                     if (this.GetMapTile(c.y, c.x - 1) != TileType.Wall) return false;
                     if (this.GetMapTile(c.y, c.x + 1) != TileType.Wall) return false;
 
+                    if (this.GetMapTile(c.y + 1, c.x) != TileType.Wall) return false;
+                    if (this.GetMapTile(c.y + 1, c.x) != TileType.Wall) return false;
+
                     if (this.GetMapTile(c.y + 1, c.x - 1) != TileType.Wall) return false;
                     if (this.GetMapTile(c.y + 1, c.x) != TileType.Wall) return false;
                     if (this.GetMapTile(c.y + 1, c.x + 1) != TileType.Wall) return false;
                 }
 
-                // Validation 4: a corridor cannot run adjacent to another corridor or room for more than one square
+                // Validation: a corridor cannot run adjacent to another corridor or room for more than one square
                 // If that happens, remove extra squares that run adjacent.
                 if(m.ElementType == MapSpaceElementType.Corridor && counter > 0)
                 {
-                    if (this.GetMapTile(c.y - 1, c.x) != TileType.Wall || this.GetMapTile(c.y - 1, c.x) != TileType.Wall
+                    if (this.GetMapTile(c.y - 1, c.x) != TileType.Wall || this.GetMapTile(c.y + 1, c.x) != TileType.Wall
                         || this.GetMapTile(c.y, c.x + 1) != TileType.Wall || this.GetMapTile(c.y, c.x - 1) != TileType.Wall)
                     {
-                        if (counter >= removeFromIndex && previousCellWasAdjacent) removeFromIndex = counter;
+                        if (previousCellWasAdjacent && removeFromIndex == 0) removeFromIndex = counter;
                         previousCellWasAdjacent = true;
                     }
                     else previousCellWasAdjacent = false;
@@ -532,6 +548,8 @@ namespace MapGenerator
             {
                 m.RemoveCoordinatesStartingAt(removeFromIndex);
             }
+
+            if (m.Coordinates.Count <= 1) return false;
 
             return true;
         }

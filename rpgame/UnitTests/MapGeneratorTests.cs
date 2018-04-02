@@ -38,7 +38,7 @@ namespace UnitTests
             m2.AddCoordinate(new Map.Coordinate(3, 1, TileType.Room));
             m2.AddCoordinate(new Map.Coordinate(3, 2, TileType.Room));
 
-            bool isvalid = m.ValidateMapSpaceElement(m2);
+            bool isvalid = m.ValidateMapSpaceElement(ref m2);
 
             Assert.IsFalse(isvalid);
         }
@@ -66,7 +66,7 @@ namespace UnitTests
             m2.AddCoordinate(new Map.Coordinate(4, 1, TileType.Room));
             m2.AddCoordinate(new Map.Coordinate(4, 2, TileType.Room));
 
-            bool isvalid = m.ValidateMapSpaceElement(m2);
+            bool isvalid = m.ValidateMapSpaceElement(ref m2);
 
             Assert.IsFalse(isvalid);
         }
@@ -94,7 +94,7 @@ namespace UnitTests
             m2.AddCoordinate(new Map.Coordinate(5, 1, TileType.Room));
             m2.AddCoordinate(new Map.Coordinate(5, 2, TileType.Room));
 
-            bool isvalid = m.ValidateMapSpaceElement(m2);
+            bool isvalid = m.ValidateMapSpaceElement(ref m2);
 
             Assert.IsTrue(isvalid);
         }
@@ -270,17 +270,44 @@ namespace UnitTests
             m2.AddCoordinate(new Map.Coordinate(2, 3, TileType.Corridor));
             m2.AddCoordinate(new Map.Coordinate(2, 4, TileType.Corridor));
 
-            bool firstCorridorIsValid = m.ValidateMapSpaceElement(m2);
+            bool firstCorridorIsValid = m.ValidateMapSpaceElement(ref m2);
 
             m3.AddCoordinate(new Map.Coordinate(1, 3, TileType.Corridor));
             m3.AddCoordinate(new Map.Coordinate(2, 3, TileType.Corridor));
             m3.AddCoordinate(new Map.Coordinate(3, 3, TileType.Corridor));
 
-            bool secondCorridotIsValid = m.ValidateMapSpaceElement(m3);
+            bool secondCorridotIsValid = m.ValidateMapSpaceElement(ref m3);
 
             Assert.IsTrue(firstCorridorIsValid);
             Assert.IsTrue(secondCorridotIsValid);
             Assert.AreEqual(2, m3.Coordinates.Count);
+        }
+
+        [Test]
+        public void TestRoomValidationForCorridors()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m2 = new Map.MapSpaceElement();
+
+            m1.ElementType = Map.MapSpaceElementType.Room;
+            m2.ElementType = Map.MapSpaceElementType.Corridor;
+
+            m2.AddCoordinate(new Map.Coordinate(1, 1, TileType.Corridor));
+            m2.AddCoordinate(new Map.Coordinate(2, 1, TileType.Corridor));
+            m2.AddCoordinate(new Map.Coordinate(3, 1, TileType.Corridor));
+
+            m.PlaceMapElementOnMap(m2);
+
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 3, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(2, 3, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(3, 4, TileType.Room));
+            m1.AddCoordinate(new Map.Coordinate(3, 4, TileType.Room));
+
+            bool isRoomValid = m.ValidateMapSpaceElement(ref m1);
+
+            Assert.IsFalse(isRoomValid);
         }
     }
 }
