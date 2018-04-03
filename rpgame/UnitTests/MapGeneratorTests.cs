@@ -309,5 +309,81 @@ namespace UnitTests
 
             Assert.IsFalse(isRoomValid);
         }
+
+        [Test]
+        public void TestFindCenterOfRoomWithCenter()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+            m1.ElementType = Map.MapSpaceElementType.Room;
+
+            m1.AddCoordinate(new Map.Coordinate(1, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(1, 3, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 3, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 3, TileType.Corridor));
+
+            Map.Coordinate c = m1.FindCenterOfRoom();
+
+            Assert.AreEqual(2, c.x);
+            Assert.AreEqual(2, c.y);
+        }
+
+        [Test]
+        public void TestFindCenterOfRoomWithoutCenter()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+            m1.ElementType = Map.MapSpaceElementType.Room;
+
+            m1.AddCoordinate(new Map.Coordinate(1, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(4, 1, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(1, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(4, 2, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(1, 3, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 3, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 3, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(4, 3, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(1, 4, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(2, 4, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(3, 4, TileType.Corridor));
+            m1.AddCoordinate(new Map.Coordinate(4, 4, TileType.Corridor));
+
+            Map.Coordinate c = m1.FindCenterOfRoom();
+
+            Assert.IsTrue(c.x == 2 || c.x == 3);
+            Assert.IsTrue(c.y == 2 || c.y == 3);
+        }
+
+        [Test]
+        public void TestGetRandomMapElement()
+        {
+            Map.MapSpaceElement m1 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m2 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m3 = new Map.MapSpaceElement();
+            Map.MapSpaceElement m4 = new Map.MapSpaceElement();
+            m1.ElementType = Map.MapSpaceElementType.Room;
+            m2.ElementType = Map.MapSpaceElementType.Room;
+            m4.ElementType = Map.MapSpaceElementType.Room;
+
+            m3.ElementType = Map.MapSpaceElementType.Corridor;
+
+            m.PlaceMapElementOnMap(m1);
+            m.PlaceMapElementOnMap(m2);
+            m.PlaceMapElementOnMap(m3);
+            m.PlaceMapElementOnMap(m4);
+
+            var randomRoom = m.GetRandomMapElementOfType(Map.MapSpaceElementType.Room);
+            var randomCorridor = m.GetRandomMapElementOfType(Map.MapSpaceElementType.Corridor);
+
+            Assert.AreEqual(m3.Guid, randomCorridor.Guid);
+            Assert.IsTrue(randomRoom.Guid == m1.Guid || randomRoom.Guid == m2.Guid || randomRoom.Guid == m4.Guid);
+        }
     }
 }

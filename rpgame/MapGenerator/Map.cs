@@ -10,7 +10,9 @@ namespace MapGenerator
     {
         Wall,
         Room,
-        Corridor
+        Corridor,
+        StairsUp,
+        StairsDown
     }
 
     public class Map
@@ -130,11 +132,11 @@ namespace MapGenerator
         {
             Random randomNumber = new Random();
 
-            int startHeight = randomNumber.Next(1, this.MapHeight - 2);
-            int startWidth = randomNumber.Next(1, this.MapWidth - 2);
+            int startHeight = randomNumber.Next(1, this.MapHeight - 1);
+            int startWidth = randomNumber.Next(1, this.MapWidth - 1);
 
-            int roomWidth = randomNumber.Next(3, 10);
-            int roomHeight = randomNumber.Next(3, 10);
+            int roomWidth = randomNumber.Next(3, 11);
+            int roomHeight = randomNumber.Next(3, 11);
 
             MapSpaceElement r = new MapSpaceElement();
             r.ElementType = MapSpaceElementType.Room;
@@ -162,7 +164,7 @@ namespace MapGenerator
             bool success = false;
             int counter = 0;
             Random r = new Random();
-            Direction d = (Direction)r.Next(0, 3); // randomize starting direction
+            Direction d = (Direction)r.Next(0, 4); // randomize starting direction
 
             while (!success && counter <= 3)
             {
@@ -184,7 +186,6 @@ namespace MapGenerator
 
             // Randomize in what direction an existing map space element should be looked for first
             Random r = new Random();
-            //Direction direction = (Direction)r.Next(0, 3);
 
             Coordinate currentPosition = null;
             int offset = 0;
@@ -270,7 +271,7 @@ namespace MapGenerator
                         if (latitude.Contains(direction)) continue; // No need to turn, there is an element in the current direction
                         if (longitude.Count <= 0) continue; // Nothing here, continue...
                         // Otherwise, randomize where to go:
-                        direction = longitude[r.Next(0, longitude.Count - 1)];
+                        direction = longitude[r.Next(0, longitude.Count)];
                         break;
                     case Direction.Left:
                     case Direction.Right:
@@ -278,7 +279,7 @@ namespace MapGenerator
                         if (latitude.Count <= 0) continue; // Nothing here. Contunue...
 
                         // Where to turn?
-                        direction = latitude[r.Next(0, latitude.Count - 1)];
+                        direction = latitude[r.Next(0, latitude.Count)];
                         break;
                 }
             }
@@ -286,6 +287,20 @@ namespace MapGenerator
             // This should never be reached...
             return false;
         }
+
+        /// <summary>
+        /// Draws the map element on the map
+        /// </summary>
+        /// <param name="m">The map element</param>
+        internal void PlaceMapElementOnMap(MapSpaceElement m)
+        {
+            mapSpaceElements.Add(m);
+            foreach (Coordinate c in m.Coordinates)
+            {
+                _map[c.y, c.x] = c.type;
+            }
+        }
+        #endregion
 
         #region FindingElements
         internal MapSpaceElement FindMapSpaceElement(MapSpaceElement element, Direction dir)
@@ -472,6 +487,24 @@ namespace MapGenerator
             }
             return false;
         }
+
+        internal MapSpaceElement GetRandomMapElementOfType(MapSpaceElementType type)
+        {
+            Random r = new Random();
+            int countOfType = 0;
+            List<MapSpaceElement> mList = new List<MapSpaceElement>();
+
+            foreach (MapSpaceElement m in this.mapSpaceElements)
+            {
+                if (m.ElementType == type)
+                {
+                    mList.Add(m);
+                    countOfType++;
+                }
+            }
+
+            return mList[r.Next(0, countOfType)];
+        }
         #endregion
 
         /// <summary>
@@ -554,20 +587,6 @@ namespace MapGenerator
 
             return true;
         }
-
-        /// <summary>
-        /// Draws the map element on the map
-        /// </summary>
-        /// <param name="m">The map element</param>
-        internal void PlaceMapElementOnMap(MapSpaceElement m)
-        {
-            mapSpaceElements.Add(m);
-            foreach (Coordinate c in m.Coordinates)
-            {
-                _map[c.y, c.x] = c.type;
-            }
-        }
-        #endregion
 
         #region SupportClasses
         /// <summary>
@@ -672,6 +691,18 @@ namespace MapGenerator
                 this._coordinates.RemoveRange(position, _coordinates.Count - position);
             }
 
+            public Coordinate GetCoordinate(int x, int y)
+            {
+                if (!this.CoordinateIsInElement(x, y)) throw new Exception("Coordinate is not in element! x: " + x.ToString() + ", y: " + y.ToString());
+
+                foreach(Coordinate c in this._coordinates)
+                {
+                    if (c.x == x && c.y == y) return c;
+                }
+
+                throw new Exception("Coordinate is not in element! x: " + x.ToString() + ", y: " + y.ToString());
+            }
+
             /// <summary>
             /// Returns the endpoint co-ordinate of the map space element based on direction.
             /// For LEFT and UP: the top left
@@ -750,6 +781,34 @@ namespace MapGenerator
                 if (isBelow && !isAbove) directions.Add(Direction.Down);
 
                 return directions;
+            }
+
+            /// <summary>
+            /// Finds the center coordinate of a room. If there is no exact center, a random location in the four
+            /// centermost squares will be returned.
+            /// </summary>
+            /// <returns></returns>
+            public Coordinate FindCenterOfRoom()
+            {
+                if (this.ElementType != MapSpaceElementType.Room) throw new Exception("This method is not supported for " + ElementType.ToString());
+
+                Coordinate startingPosition = FindEndPointBasedOnDirection(Direction.Left);
+
+                int x = 0, y = 0;
+
+                double dx = Convert.ToDouble(startingPosition.x) + (Convert.ToDouble(this.Width) / 2);
+                double dy = (double)startingPosition.y + (Convert.ToDouble(this.Height) / 2);
+
+                Random r = new Random();
+
+                // determine x
+                if (r.Next(0, 2) == 0) x = Convert.ToInt32(Math.Floor(dx));
+                else x = Convert.ToInt32(Math.Ceiling(dx));
+
+                if (r.Next(0, 2) == 0) y = Convert.ToInt32(Math.Floor(dy));
+                else y = Convert.ToInt32(Math.Ceiling(dy));
+
+                return this.GetCoordinate(x, y);
             }
 
             #region StaticMethods
