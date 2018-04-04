@@ -12,7 +12,10 @@ namespace MapGenerator
         Room,
         Corridor,
         StairsUp,
-        StairsDown
+        StairsDown,
+        DoorClosed,
+        DoorOpen,
+        DoorSecret
     }
 
     public class Map
@@ -136,6 +139,7 @@ namespace MapGenerator
 
             PlaceStartOnMap();
             PlaceEndOnMap();
+            PlaceDoors();
         }
 
         /// <summary>
@@ -360,6 +364,40 @@ namespace MapGenerator
                 // Placing end
                 _endPosition = c;
                 this._map[c.y, c.x] = TileType.StairsDown;
+            }
+        }
+
+        /// <summary>
+        /// This method iterates through the corridors of the map, and checks if it should add a door there
+        /// </summary>
+        internal void PlaceDoors()
+        {
+            foreach(MapSpaceElement m in this.mapSpaceElements)
+            {
+                if (m.ElementType == MapSpaceElementType.Corridor)
+                {
+                    // First check if starting place can hold a door:
+                    Coordinate c = m.Coordinates[0];
+                    PlaceDoor(c, TileType.DoorClosed);
+
+                    // Then, check if the ending place can hold a door:
+                    c = m.Coordinates[m.Coordinates.Count - 1];
+                    PlaceDoor(c, TileType.DoorClosed);
+                }
+            }
+        }
+
+        internal void PlaceDoor(Coordinate coordinate, TileType doorType)
+        {
+            if(doorType != TileType.DoorClosed && doorType != TileType.DoorClosed && doorType != TileType.DoorSecret)
+            {
+                throw new Exception("TileType " + doorType.ToString() + " is not a door tile!");
+            }
+
+            if ((_map[coordinate.y - 1, coordinate.x] == TileType.Wall && _map[coordinate.y + 1, coordinate.x] == TileType.Wall)
+                        ^ (_map[coordinate.y, coordinate.x - 1] == TileType.Wall && _map[coordinate.y, coordinate.x + 1] == TileType.Wall))
+            {
+                _map[coordinate.y, coordinate.x] = TileType.DoorClosed;
             }
         }
         #endregion
