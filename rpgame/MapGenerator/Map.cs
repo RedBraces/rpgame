@@ -42,12 +42,23 @@ namespace MapGenerator
                 return _map.GetLength(0);
             }
         }
+
+        private Coordinate _startPosition;
+        public Coordinate StartPosition { get { return _startPosition; } }
+
+        private Coordinate _endPosition;
+        public Coordinate EndPosition { get { return _endPosition;  } }
+
+
         #endregion
 
         public Map(int height, int width, bool generateMap = true)
         {
             _map = new TileType[height, width];
             GenerateEmptyMap();
+
+            _startPosition = null;
+            _endPosition = null;
 
             RoomPercentage = 35;
             mapSpaceElements = new List<MapSpaceElement>();
@@ -122,6 +133,9 @@ namespace MapGenerator
                     //return;
                 }
             }
+
+            PlaceStartOnMap();
+            PlaceEndOnMap();
         }
 
         /// <summary>
@@ -298,6 +312,54 @@ namespace MapGenerator
             foreach (Coordinate c in m.Coordinates)
             {
                 _map[c.y, c.x] = c.type;
+            }
+        }
+
+        internal void PlaceStartOnMap()
+        {
+            PlaceStartOrEndOnMap(true);
+        }
+
+        internal void PlaceEndOnMap()
+        {
+            PlaceStartOrEndOnMap(false);
+        }
+
+        internal void PlaceStartOrEndOnMap(bool isStart)
+        {
+            MapSpaceElement room = new MapSpaceElement();
+
+            bool otherEndPointIsInRoom = true;
+            while(otherEndPointIsInRoom)
+            {
+                room = this.GetRandomMapElementOfType(MapSpaceElementType.Room);
+
+                // Verify the start/end cell - depending what we're placing now - isn't in the same room.
+                if (!isStart)
+                {
+                    // Checking for end
+                    if (_startPosition == null) otherEndPointIsInRoom = false;
+                    else if (!room.CoordinateIsInElement(_startPosition.x, _startPosition.y)) otherEndPointIsInRoom = false;
+                } else
+                {
+                    // Checking for start
+                    if (_endPosition == null) otherEndPointIsInRoom = false;
+                    else if (!room.CoordinateIsInElement(_endPosition.x, _endPosition.y)) otherEndPointIsInRoom = false;
+                }
+            }
+
+            Coordinate c = room.FindCenterOfRoom();
+
+            if(isStart)
+            {
+                // Placing start
+                _startPosition = c;
+                this._map[c.y, c.x] = TileType.StairsUp;
+            } else
+            {
+                // Placing end
+                _endPosition = c;
+                this._map[c.y, c.x] = TileType.StairsDown;
             }
         }
         #endregion
@@ -606,7 +668,7 @@ namespace MapGenerator
             Down = 3
         }
 
-        internal class Coordinate
+        public class Coordinate
         {
             public int x { get; set; }
             public int y { get; set; }

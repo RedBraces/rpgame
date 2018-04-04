@@ -41,6 +41,10 @@ namespace rpgame
                     return ".";
                 case TileType.Wall:
                     return "#";
+                case TileType.StairsUp:
+                    return ">";
+                case TileType.StairsDown:
+                    return "<";
                 default:
                     throw new Exception("Unknown tile type!");
             }
