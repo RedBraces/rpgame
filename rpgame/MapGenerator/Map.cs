@@ -23,9 +23,9 @@ namespace MapGenerator
         private TileType[,] _map;
 
         /// <summary>
-        /// This is how much of the map should be covered in rooms when the map is complete
+        /// This is how much of the map should be covered in rooms, corridors etc. when the map is complete
         /// </summary>
-        int RoomPercentage { get; set; }
+        int FillPercentage { get; set; }
 
         private List<MapSpaceElement> mapSpaceElements;
 
@@ -63,7 +63,7 @@ namespace MapGenerator
             _startPosition = null;
             _endPosition = null;
 
-            RoomPercentage = 35;
+            FillPercentage = 35;
             mapSpaceElements = new List<MapSpaceElement>();
 
             if(generateMap) PopulateMap();
@@ -122,10 +122,14 @@ namespace MapGenerator
 
         /// <summary>
         /// This function populates the map
+        /// <paramref name="iterationCountBeforeCheck">How many times the map is iterated between each check of
+        /// whether the fill rate has been met</paramref>
         /// </summary>
-        public void PopulateMap()
+        public void PopulateMap(int iterationCountBeforeCheck = 100)
         {
-            while (GetMapFillRate() < RoomPercentage)
+            int iterations = 0;
+            //while (GetMapFillRate() < FillPercentage)
+            while(iterations < iterationCountBeforeCheck)
             {
                 bool success = GenerateRoom();
                 // continue; 
@@ -134,6 +138,12 @@ namespace MapGenerator
                 {
                     GenerateCorridorFromRoom(this.mapSpaceElements[this.mapSpaceElements.Count - 1]);
                     //return;
+                }
+
+                iterations++;
+                if(iterations == iterationCountBeforeCheck)
+                {
+                    if (GetMapFillRate() < FillPercentage) iterations = 0;
                 }
             }
 
