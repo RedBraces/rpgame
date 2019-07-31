@@ -394,6 +394,16 @@ namespace MapGenerator
                 throw new Exception("TileType " + doorType.ToString() + " is not a door tile!");
             }
 
+            // Validates if the door can be placed
+
+            // Is there a door next to the new door in a straight line (up, down, left, right)?
+            // If yes, do not place a door.
+            if(_map[coordinate.y - 1, coordinate.x] == TileType.DoorClosed || _map[coordinate.y + 1, coordinate.x] == TileType.DoorClosed
+                || _map[coordinate.y, coordinate.x - 1] == TileType.DoorClosed || _map[coordinate.y, coordinate.x + 1] == TileType.DoorClosed)
+            {
+                return;
+            }
+
             if ((_map[coordinate.y - 1, coordinate.x] == TileType.Wall && _map[coordinate.y + 1, coordinate.x] == TileType.Wall)
                         ^ (_map[coordinate.y, coordinate.x - 1] == TileType.Wall && _map[coordinate.y, coordinate.x + 1] == TileType.Wall))
             {
